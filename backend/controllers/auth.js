@@ -115,8 +115,6 @@ exports.forgotPassword = async (req, res) => {
             });
         }
 
-        const resetPasswordToken = user.getResetPasswordToken();
-
     }
     catch (error){
         return res.status(500).json({
