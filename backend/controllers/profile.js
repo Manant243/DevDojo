@@ -64,10 +64,7 @@ router.get('/:username/followers', async (req, res) => {
             'followers.user'
         );
 
-        res.status(200).json({
-            success : true,
-            followers,
-        });
+        res.status(200).json(followers.followers);
     }
     catch (error){
         console.error(error);
@@ -96,10 +93,7 @@ router.get('/:username/following', async (req, res) => {
             'following.user'
         );
 
-        res.status(200).json({
-            success : true,
-            following,
-        });
+        res.status(200).json(following.following);
     }
     catch (error){
         console.error(error);
@@ -163,5 +157,62 @@ router.put('/', auth, async (req, res) => {
     }
 });
 
+// @route   POST /api/profile/follow/:userId
+router.post('/follow/:userId', auth, async (req, res) => {
+    try {
+        const loggedInUser = await Follower.findOne({ user : req.userId });
+        const userToFollowOrUnfollow = await Follower.findOne({
+            user : req.params.userId,
+        });
+
+        if(!loggedInUser || !userToFollowOrUnfollow) {
+            return res.status(404).json({
+                success : true,
+                message : 'User not found',
+            });
+        }
+
+        const isFollowing = loggedInUser.following.length > 0 &&
+            loggedInUser.following.filter(
+                (following) => following.user.toString() == req.params.userId
+            ).length > 0;
+
+        if(isFollowing){
+            let index = loggedInUser.following.findIndex(
+                (following) => following.user.toString() == req.params.userId
+            );
+
+            loggedInUser.following.splice(index, 1);
+            await loggedInUser.save();
+
+            index = userToFollowOrUnfollow.followers.findIndex(
+                (follower) => follower.user.toString() == req.userId
+            );
+
+            userToFollowOrUnfollow.followers.splice(index, 1);
+            await userToFollowOrUnfollow.save();
+
+            res.status(200).json(
+                userToFollowOrUnfollow.followers
+            );
+        }
+        else{
+            loggedInUser.following.unshift({ user : req.params.userId });   
+            await loggedInUser.save();
+
+            userToFollowOrUnfollow.followers.unshift({ user : req.userId });
+            await userToFollowOrUnfollow.save();
+
+            res.status(200).json(userToFollowOrUnfollow.followers);
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
 
 module.exports = router;
