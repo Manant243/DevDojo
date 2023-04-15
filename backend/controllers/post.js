@@ -341,3 +341,27 @@ router.put('/save/:postId', auth, async (req, res) => {
         });
     }
 });
+
+// @route   GET /api/posts/like/:postId
+// @desc    Get likes of a post
+router.get('/like/:postId', async (req, res) => {
+    try{
+        const post = await Post.findById(req.params.postId).populate('likes.user');
+
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        res.status(200).json(post.likes);
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        }); 
+    }
+});
