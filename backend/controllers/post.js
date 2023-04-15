@@ -283,7 +283,7 @@ router.put('/like/:postId', auth, async (req, res) => {
             post.likes.splice(index, 1);
             post = await post.save();
 
-            // remove like notification (todo)
+            // remove like notification(todo)
             res.status(200).json(post);
         }
         else{
