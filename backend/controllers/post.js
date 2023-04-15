@@ -116,3 +116,148 @@ router.get('/feed', auth, async (req, res) => {
     }
 });
 
+// @route   GET /api/profile/saves
+router.get('/saves', auth, async (req, res) => {
+    try{
+        const saves = await Post.find({
+            'saves.user' : mongoose.Types.ObjectId(req.userId),
+        }).populate('user');
+
+        res.status(200).json(saves);
+
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
+// @route   GET /api/posts/:postId
+// @desc    Get a post by ID
+
+router.get('/:postId', async (req, res) => {
+    try {
+        let post = await Post.findById(req.params.postId).populate('user');
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+        post.views++;
+        post = await post.save();
+
+        res.status(200).json(post);
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
+// @route   PUT /api/posts/:postId
+// @desc    Update a post
+
+router.put('/:postId', auth, upload.array('images', 5), async (req, res) => {
+    const {
+        title,
+        description,
+        Images,
+        liveDemo,
+        sourceCode,
+        techStack,
+        isImages,
+    } = req.body;
+
+    if(!isOriginalImages && req.files.length < 1){
+        return res.status(400).json({
+            success : false,
+            message : 'Atleast one image is required',
+        });
+    }
+
+    try {
+        let post = await Post.findById(req.params.postId);
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        if(post.user.toString() !== req.userId){
+            return res.status(401).json({
+                success : false,
+                message : 'You are not authorized to edit this post',
+            });
+        }
+
+        const postObj = {
+            title, 
+            description,
+            images : JSON.parse(isImages)
+                ? JSON.parse(Images)
+                : req.files.map((file) => file.path),
+            liveDemo,
+            techStack : JSON.parse(techStack),
+        };
+
+        if (sourceCode) postObj.sourceCode = sourceCode;
+
+        post = await Post.findByIdAndUpdate(req.params.postId, postObj, {
+            new : true,
+        });
+
+        res.status(201).json(post);
+    }
+    catch (err){
+        console.error(err);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
+// @route   DELETE /api/posts/:postId
+// @desc    Delete a post by ID
+router.delete('/:postId', auth, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.postId);
+
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const user = await User.findById(req.userId);
+        if(post.user.toString() === req.userId || user.role === 'root'){
+            await Post.findOneAndRemove(post);
+            res.status(200).json({
+                success : true,
+                message : 'Post deleted',
+            });
+        }
+        else{
+            res.status(401).json({
+                success : false,
+                message : 'You are not Authorized to delete this post',
+            });
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
