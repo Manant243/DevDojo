@@ -261,3 +261,44 @@ router.delete('/:postId', auth, async (req, res) => {
         });
     }
 });
+
+// @route   PUT /api/posts/like/:postId
+// @desc    Like or unlike a post
+router.put('/like/:postId', auth, async (req, res) => {
+    try{
+        let post = await Post.findById(req.params.postId);
+        
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const isLiked = 
+            post.likes.filter((like) => like.user.toString() == req.userId).length > 0;
+
+        if(isLiked){
+            const index = post.likes.findIndex((like) => like.user.toString() == req.userId);
+            post.likes.splice(index, 1);
+            post = await post.save();
+
+            // remove like notification (todo)
+            res.status(200).json(post);
+        }
+        else{
+            post.likes.unshift({ user : req.userId });
+            post = await post.save();
+
+            // add like notification
+            res.status(200).json(post);
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
