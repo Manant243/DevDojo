@@ -302,3 +302,42 @@ router.put('/like/:postId', auth, async (req, res) => {
         });
     }
 });
+
+// @route   PUT /api/posts/save/:postId
+// @desc    Save or unsave a post
+router.put('/save/:postId', auth, async (req, res) => {
+    try{
+        let post = await Post.findById(req.params.postId);
+
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const isSaved = 
+            post.saves.filter((save) => save.user.toString() === req.userId).length > 0;
+
+        if(isSaved){
+            const index = post.saves.findIndex((save) => save.user.toString() == req.userId);
+            post.saves.splice(index, 1);
+            post = await post.save();
+
+            res.status(200).json(post);
+        }
+        else{
+            post.saves.unshift({ user : req.userId });
+            post = await post.save();
+
+            res.status(200).json(post);
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
