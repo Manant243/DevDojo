@@ -188,3 +188,51 @@ router.put('/like/:postId/:commentId', auth, async (req, res) => {
     }
 })
 
+// @route   POST /api/comments/:postId/:commentId
+// @desc    Reply to a comment
+router.post('/:postId/:commentId', auth, async (req, res) => {
+    try{
+        if(req.body.text.length < 1){
+            return res.status(400).json({
+                success : false,
+                message : 'Reply must be atleast 1 character long',
+            });
+        }
+
+        let post = await Comment.findOne({ post : req.params.postId });
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const reply = {
+            _id : uuid(),
+            user : req.userId,
+            text : req.body.text,
+            date : Date.now(),
+            likes : [],
+        };
+
+        const commentToReply = post.comments.find(
+            (comment) => comment._id === req.params.commentId
+        );
+        
+        commentToReply.replies.push(reply);
+        post = await post.save();
+
+        post = await Comment.populate(post, 'comments.user');
+        post = await Comment.populate(post, 'comments.replies.user');
+
+        res.status(201).json(post.comments); 
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
