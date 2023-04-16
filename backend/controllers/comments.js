@@ -79,3 +79,55 @@ router.post('/:postId', auth, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/comments/:postId/:commentId
+// @desc    Delete a comment
+router.delete('/:postId/:commentId', auth, async (req, res) => {
+    try{
+        let post = await Comment.findOne({ post : req.params.postId });
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const comment = post.comments.find(
+            (comment) => comment._id === req.params.commentId
+        );
+
+        if(!comment){
+            return res.status(404).json({
+                success : false,
+                message : 'Comment not found',
+            });
+        }
+
+        const user = await User.findById(req.user.Id);
+
+        if(comment.user.toString() === req.userId || user.role === 'root'){
+            const index = post.comments.findIndex(
+                (comment) => comment._id === req.params.commentId
+            );
+
+            post.comments.splice(index, 1);
+            post = await post.save();
+
+            post = await Comment.populate(post, 'comments.user');
+            post = await Comment.populate(post, 'comments.replies.user');   
+
+            res.status(200).json(post.comments);
+        }
+        else{
+            res.status(401).json({ message : 'You are not authorized to delete this comment'});
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
+
