@@ -44,3 +44,37 @@ router.get('/:searchText', async (req, res) => {
     }
 });
 
+// @route:  GET /api/search/users/:searchText
+// @desc:   Get users related to search text
+router.get('/users/:searchText', auth, async (req, res) => {
+    const { searchText } = req.params;
+
+    if(searchText.trim().length === 0){
+        return res.status(400).json({
+            success : false,
+            message : 'Search text too short',
+        });
+    }
+
+    try {
+        const users = await User.find({
+            $or: [
+                {name: { $regex: searchText, $options: 'i'}, isVerified: true},
+                {username: { $regex: searchText, $options: 'i'}},
+            ],
+            isVerified : true,
+        })
+
+        users = users.filter((user) => user._id.toString() !== req.userId);
+
+        res.status(200).json(users);
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
