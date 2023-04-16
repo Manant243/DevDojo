@@ -236,3 +236,64 @@ router.post('/:postId/:commentId', auth, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/comments/:postId/:commentId/:replyId
+// @desc    Delete a reply to comment
+router.delete('/:postId/:commentId/:replyId', auth, async (req, res) => {
+    try{
+        let post = await Comment.findOne({ post : req.params.postId });
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const parentComment = post.comments.find(
+            (comment) => comment._id === req.params.commentId
+        );
+
+        if(!parentComment){
+            return res.status(404).json({
+                success : false,
+                message : 'Comment not found',
+            });
+        }
+
+        const reply = parentComment.replies.find(
+            (reply) => reply._id === req.params.replyId
+        );
+
+        if(!reply){
+            return res.status(404).json({
+                success : false,
+                message : 'Reply not found',
+            });
+        }
+
+        const user = await User.findById(req.userId);
+
+        if(reply.user.toString() === req.userId || user.role === 'root'){
+            const index = parentComment.replies.findIndex(
+                (reply) => reply._id === req.params.replyId
+            );
+
+            parentComment.replies.splice(index, 1);
+            post = await post.save();
+
+            post = await Comment.populate(post, 'comments.user');
+            post = await Comment.populate(post, 'comments.replies.user');   
+
+            res.status(200).json(post.comments);
+        }
+        else{
+            res.status(401).json({ message : 'You are not authorized to delete this comment'});
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
