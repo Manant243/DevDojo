@@ -297,3 +297,74 @@ router.delete('/:postId/:commentId/:replyId', auth, async (req, res) => {
         });
     }
 });
+
+// @route   PUT /api/comments/like/:postId/:commentId/:replyId
+// @desc    Like or unlike a reply
+router.put('/like/:postId/:commentId/:replyId', auth, async (req, res) => {
+    try{
+        let post = await Comment.findOne({ post : req.params.postId });
+        if(!post){
+            return res.status(404).json({
+                success : false,
+                message : 'Post not found',
+            });
+        }
+
+        const comment = post.comments.find(
+            (comment) => comment._id === req.params.commentId
+        );
+
+        if(!comment){
+            return res.status(404).json({
+                success : false,
+                message : 'Comment not found',
+            });
+        }
+
+        const reply = comment.replies.find(
+            (reply) => reply._id === req.params.replyId
+        );
+        
+        if(!reply){
+            return res.status(404).json({
+                success : false,
+                message : 'Reply not found',
+            });
+        }
+
+        const isLiked = 
+            reply.likes.filter((like) => like.user.toString() === req.userId).length > 0;
+
+        if(isLiked){
+            const index = reply.likes.findIndex(
+                (like) => like.user.toString() === req.userId
+            );
+
+            reply.likes.splice(index, 1);
+            post = await post.save();
+
+            post = await Comment.populate(post, 'comments.user');
+            post = await Comment.populate(post, 'comments.replies.user');
+
+            res.status(200).json(post.comments);
+        }
+        else{
+            reply.likes.unshift({ user : req.userId });
+            post = await post.save();
+
+            post = await Comment.populate(post, 'comments.user');
+            post = await Comment.populate(post, 'comments.replies.user');
+
+            res.status(200).json(post.comments);
+        }
+    }
+    catch (error){
+        console.error(error);
+        res.status(500).json({
+            success : false,
+            message : 'Server error',
+        });
+    }
+});
+
+module.exports = router;
