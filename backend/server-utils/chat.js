@@ -46,5 +46,24 @@ const sendMessage = async (userId, receiverId, message) => {
     }
 };
 
+const addChat = async (user, receiverId, newMessage) => {
+    const previousChat = user.chats.find(
+        (chat) => chat.messagesWith.toString() === receiverId
+    );
+
+    if(previousChat){
+        previousChat.messages.push(newMessage);
+        await user.save();
+    }
+    else{
+        const newChat = {
+            messagesWith : receiverId,
+            messages : [newMessage],
+        };
+        user.chats.unshift(newChat);
+        await user.save();
+    }
+};
+
 
 
