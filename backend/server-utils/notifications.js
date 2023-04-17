@@ -180,3 +180,33 @@ const newFollowerNotification = async (userToNotifyId, userWhoFollowedId) => {
         console.error(error);
     }
 };
+
+const removeFollowerNotification = async (userToNotifyId, userWhoFollowedId) => {
+    try {
+        await Notification.findOneAndUpdate(
+            { user : userToNotifyId },
+            {
+                $pull: {
+                    notifications: {
+                        type : 'follow',
+                        user : userWhoFollowedId,
+                    }, 
+                },
+            }
+        );
+    }
+    catch (error){
+        console.error(error);
+    }
+}
+
+module.exports = {
+    newLikeNotification,
+    removeLikeNotification,
+    newCommentNotification,
+    removeCommentNotification,
+    newFollowerNotification,
+    removeFollowerNotification,
+    newReplyNotification,
+    removeReplyNotification,
+};
