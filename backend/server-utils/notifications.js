@@ -162,3 +162,21 @@ const removeReplyNotification = async (
     }
 }
 
+const newFollowerNotification = async (userToNotifyId, userWhoFollowedId) => {
+    try {
+        const userToNotify = Notification.findOne({ user : userToNotifyId });
+        const notification = {
+            type : 'follow',
+            user : userWhoFollowedId,
+            date : Date.now(),
+        };
+
+        userToNotify.notifications.unshift(notification);
+        await userToNotify.save();
+
+        await setNotificationsToUnread(userToNotifyId);
+    }
+    catch (error){
+        console.error(error);
+    }
+};
