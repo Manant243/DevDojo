@@ -109,3 +109,56 @@ const newReplyNotification = async (
         console.error(error);
     }
 };
+
+const removeCommentNotification = async (
+    userToNotifyId,
+    userWhoCommentedId,
+    postId,
+    commentId
+) => {
+    try {
+        await Notification.findOneAndUpdate(
+            { user : userToNotifyId },
+            {
+                $pull: {
+                    notifications: {
+                        type : 'comment',
+                        user : userWhoCommentedId,
+                        post : postId,
+                        commentId,
+                    }, 
+                },
+            }
+        );
+    }
+    catch (error){
+        console.error(error);
+    }
+}
+
+const removeReplyNotification = async (
+    userToNotifyId,
+    userWhoCommentedId,
+    postId,
+    commentId
+) => {
+    try {
+        await Notification.findOneAndUpdate(
+            { user : userToNotifyId },
+            {
+                $pull: {
+                    notifications: {
+                        type : 'reply',
+                        user : userWhoCommentedId,
+                        post : postId,
+                        commentId,
+                    }, 
+                },
+            }
+        );
+    }
+    catch (error){
+        console.error(error);
+    }
+}
+
