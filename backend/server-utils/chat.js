@@ -65,5 +65,38 @@ const addChat = async (user, receiverId, newMessage) => {
     }
 };
 
+const setMessageToUnread = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+        
+        if(!user.unreadMessage){
+            user.unreadMessage = true;
+            await user.save();
+        }
+    }
+    catch (error){
+        console.error(error);
+    }
+};
 
+const setMessageToRead = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+        
+        if(user.unreadMessage){
+            user.unreadMessage = false;
+            await user.save();
+        }
+    }
+    catch (error){
+        console.error(error);
+    }
+};
+
+module.exports = {
+    loadMessages,
+    sendMessage,
+    setMessageToUnread,
+    setMessageToRead,
+};
 
