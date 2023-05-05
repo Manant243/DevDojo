@@ -15,10 +15,11 @@ const upload = require('../middleware/imageUpload.middleware');
 router.post('/:token', upload.single('profilePic'), async (req, res) => {
     const { token } = req.params;
     const { bio, techStack, social } = req.body;
-    const { github, linkedin, website, twitter, instagram, youtube } = JSON.parse(social);
+    const { github, linkedin, website, twitter, instagram, youtube } = social;
 
     const verificationToken = crypto.createHash('sha256').update(token).digest('hex');
 
+    console.log(verificationToken);
     try {
         const user = await User.findOne({ verificationToken });
         if(!user){
@@ -40,7 +41,7 @@ router.post('/:token', upload.single('profilePic'), async (req, res) => {
         let profileFields = {};
         profileFields.user = user._id;
         profileFields.bio = bio;
-        profileFields.techStack = JSON.parse(techStack);
+        profileFields.techStack = techStack;
 
         profileFields.social = {};
         if (github) profileFields.social.github = github;
@@ -52,6 +53,8 @@ router.post('/:token', upload.single('profilePic'), async (req, res) => {
 
         await new Profile(profileFields).save();
 
+        await new Chat({ user: user._id, chats: [] }).save();
+        await new Notification({ user: user._id, notifications: [] }).save();
         await new Follower({ user : user._id, followers : [], following : [] }).save();
 
         jwt.sign({ userId : user._id}, process.env.JWT_SECRET, (err, token) => {

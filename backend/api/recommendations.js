@@ -21,7 +21,7 @@ router.get('/', auth, async (req, res) => {
                     length : { $size : '$followers' },
                 },
             },
-            { sort : { length : -1 }},
+            { $sort : { length : -1 }},
             { $limit : 5 },
         ]);
 
@@ -68,3 +68,5 @@ router.get('/', auth, async (req, res) => {
     }
     
 });
+
+module.exports = router;

@@ -11,8 +11,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'driwwwle',
-    upload_preset: 'driwwwle',
+    folder: 'DevDojo',
+    upload_preset: 'DevDojo',
   },
 });
 

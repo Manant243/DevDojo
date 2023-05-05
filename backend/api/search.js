@@ -24,7 +24,7 @@ router.get('/:searchText', async (req, res) => {
                 {name: { $regex: searchText, $options: 'i'}},
                 {username: { $regex: searchText, $options: 'i'}},
             ],
-            isVerified : true,
+            //isVerified : false,
         }).limit(3);
 
         const posts = await Post.find({
@@ -57,7 +57,7 @@ router.get('/users/:searchText', auth, async (req, res) => {
     }
 
     try {
-        const users = await User.find({
+        let users = await User.find({
             $or: [
                 {name: { $regex: searchText, $options: 'i'}, isVerified: true},
                 {username: { $regex: searchText, $options: 'i'}},

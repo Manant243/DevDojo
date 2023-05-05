@@ -32,8 +32,8 @@ router.get('/:username', async (req, res) => {
         res.status(200).json({
             success : true,
             profile, 
-            followers : follow.followers,
-            following : follow.following,
+            followers : follow?.followers || [],
+            following : follow?.following || [],
             posts,
         });
     }
@@ -54,7 +54,7 @@ router.get('/:username/followers', async (req, res) => {
         });
 
         if(!user){
-            return res.status({
+            return res.status(400).json({
                 success : false,
                 message : 'User not found',
             });
@@ -63,7 +63,8 @@ router.get('/:username/followers', async (req, res) => {
         const followers = await Follower.findOne({ user: user._id }).populate(
             'followers.user'
         );
-
+        
+        console.log(followers);
         res.status(200).json(followers.followers);
     }
     catch (error){
@@ -160,11 +161,15 @@ router.put('/', auth, async (req, res) => {
 // @route   POST /api/profile/follow/:userId
 router.post('/follow/:userId', auth, async (req, res) => {
     try {
+        console.log(req.userId);
         const loggedInUser = await Follower.findOne({ user : req.userId });
         const userToFollowOrUnfollow = await Follower.findOne({
             user : req.params.userId,
         });
 
+        console.log(loggedInUser);
+        console.log(userToFollowOrUnfollow);
+        
         if(!loggedInUser || !userToFollowOrUnfollow) {
             return res.status(404).json({
                 success : true,

@@ -8,6 +8,13 @@ const Comment = require('../models/Comment.model');
 
 const auth = require('../middleware/auth.middleware');
 
+const {
+    newCommentNotification,
+    removeCommentNotification,
+    newReplyNotification,
+    removeReplyNotification,
+} = require('../server-utils/notifications');
+
 // @route   GET /api/comments/:postId
 // @desc    Get comments on a post  
 router.get('/:postId', async (req, res) => {
@@ -68,6 +75,18 @@ router.post('/:postId', auth, async (req, res) => {
         post = await Comment.populate(post, 'comments.user');
         post = await Comment.populate(post, 'comments.replies.user');
 
+        const postInfo = await Post.findById(req.params.postId);
+
+        if (postInfo.user.toString() !== req.userId) {
+            await newCommentNotification(
+                postInfo.user.toString(),
+                req.userId,
+                req.params.postId,
+                comment._id,
+                req.body.text
+            );
+        }
+
         res.status(201).json(post.comments); 
     }
     catch (error){
@@ -102,7 +121,7 @@ router.delete('/:postId/:commentId', auth, async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.user.Id);
+        const user = await User.findById(req.userId);
 
         if(comment.user.toString() === req.userId || user.role === 'root'){
             const index = post.comments.findIndex(
@@ -114,6 +133,17 @@ router.delete('/:postId/:commentId', auth, async (req, res) => {
 
             post = await Comment.populate(post, 'comments.user');
             post = await Comment.populate(post, 'comments.replies.user');   
+
+            const postInfo = await Post.findById(req.params.postId);
+
+            if(postInfo.user.toString() !== req.userId) {
+                await removeCommentNotification(
+                    postInfo.user.toString(),
+                    req.userId,
+                    req.params.postId,
+                    comment._id
+                );
+            }
 
             res.status(200).json(post.comments);
         }
@@ -225,6 +255,16 @@ router.post('/:postId/:commentId', auth, async (req, res) => {
         post = await Comment.populate(post, 'comments.user');
         post = await Comment.populate(post, 'comments.replies.user');
 
+        if (commentToReply.user._id.toString() !== req.userId) {
+            await newReplyNotification(
+                commentToReply.user._id.toString(),
+                req.userId,
+                req.params.postId,
+                reply._id,
+                req.body.text
+            );
+        }
+
         res.status(201).json(post.comments); 
     }
     catch (error){
@@ -281,7 +321,16 @@ router.delete('/:postId/:commentId/:replyId', auth, async (req, res) => {
             post = await post.save();
 
             post = await Comment.populate(post, 'comments.user');
-            post = await Comment.populate(post, 'comments.replies.user');   
+            post = await Comment.populate(post, 'comments.replies.user'); 
+            
+            if (parentComment.user._id.toString() !== req.userId) {
+                await removeReplyNotification(
+                    parentComment.user._id.toString(),
+                    req.userId,
+                    req.params.postId,
+                    reply._id
+                );
+            }
 
             res.status(200).json(post.comments);
         }
@@ -368,3 +417,4 @@ router.put('/like/:postId/:commentId/:replyId', auth, async (req, res) => {
 });
 
 module.exports = router;
+

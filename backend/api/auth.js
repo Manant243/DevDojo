@@ -78,7 +78,7 @@ router.post('/', async (req, res) => {
 
         jwt.sign({ userId : user._id}, process.env.JWT_SECRET, (err, token) => {
             if(err) throw err;
-            res.status(200).json({ token });
+            res.status(200).json({ message : 'Succesfully logged in', token });
         });
     }
     catch (err){

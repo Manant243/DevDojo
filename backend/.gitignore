@@ -1,1 +1,10 @@
-.env
+#local env files
+config.env
+.env.local
+
+#dependencies
+/node_modules
+
+#next.js
+/.next/
+/out/

@@ -10,6 +10,11 @@ const Comment = require('../models/Comment.model');
 const auth = require('../middleware/auth.middleware');
 const upload = require('../middleware/imageUpload.middleware');
 
+const {
+    newLikeNotification,
+    removeLikeNotification,
+} = require('../server-utils/notifications');
+
 // @route   POST /api/posts
 // create a new post 
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
@@ -29,7 +34,7 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
             description,
             images : req.files.map((file) => file.path),
             liveDemo,
-            techStack : JSON.parse(techStack),
+            techStack,
         };
 
         if (sourceCode) postObj.sourceCode = sourceCode;
@@ -120,7 +125,7 @@ router.get('/feed', auth, async (req, res) => {
 router.get('/saves', auth, async (req, res) => {
     try{
         const saves = await Post.find({
-            'saves.user' : mongoose.Types.ObjectId(req.userId),
+            'saves.user' : new mongoose.Types.ObjectId(req.userId),
         }).populate('user');
 
         res.status(200).json(saves);
@@ -175,7 +180,7 @@ router.put('/:postId', auth, upload.array('images', 5), async (req, res) => {
         isImages,
     } = req.body;
 
-    if(!isOriginalImages && req.files.length < 1){
+    if(!isImages && req.files.length < 1){
         return res.status(400).json({
             success : false,
             message : 'Atleast one image is required',
@@ -201,11 +206,11 @@ router.put('/:postId', auth, upload.array('images', 5), async (req, res) => {
         const postObj = {
             title, 
             description,
-            images : JSON.parse(isImages)
-                ? JSON.parse(Images)
+            images : isImages
+                ? Images
                 : req.files.map((file) => file.path),
             liveDemo,
-            techStack : JSON.parse(techStack),
+            techStack : techStack,
         };
 
         if (sourceCode) postObj.sourceCode = sourceCode;
@@ -283,7 +288,15 @@ router.put('/like/:postId', auth, async (req, res) => {
             post.likes.splice(index, 1);
             post = await post.save();
 
-            // remove like notification(todo)
+            // remove like notification
+            if (post.user.toString() !== req.userId) {
+                await removeLikeNotification(
+                    post.user.toString(),
+                    req.userId,
+                    req.params.postId
+                );
+            }
+
             res.status(200).json(post);
         }
         else{
@@ -291,6 +304,14 @@ router.put('/like/:postId', auth, async (req, res) => {
             post = await post.save();
 
             // add like notification
+            if (post.user.toString() !== req.userId) {
+                await newLikeNotification(
+                    post.user.toString(),
+                    req.userId,
+                    req.params.postId
+                );
+            }        
+
             res.status(200).json(post);
         }
     }
@@ -365,3 +386,5 @@ router.get('/like/:postId', async (req, res) => {
         }); 
     }
 });
+
+module.exports = router;    

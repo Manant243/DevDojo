@@ -57,9 +57,8 @@ router.get('/:username', async (req, res) => {
 });
 
 // @route : POST /api/signup
-
 router.post('/', async (req, res) => {
-    const { name, username, email, password} = req.body();
+    const { name, username, email, password} = req.body;
 
     if(password.length < 6){
         return res.status(400).json({
@@ -93,6 +92,7 @@ router.post('/', async (req, res) => {
         user.verificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
 
 
+        console.log(verificationToken);
         const verificationUrl = `${req.protocol}://${req.get(
         'host'
         )}/onboarding/${verificationToken}`;
@@ -141,4 +141,4 @@ router.post('/', async (req, res) => {
     }
 });
 
-module.exports(router);
+module.exports = router;
